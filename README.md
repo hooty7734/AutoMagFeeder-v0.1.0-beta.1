@@ -21,8 +21,8 @@ This repository ships two things:
 
 To make this tool function you need all of the following:
 
-1. **Phantasy Star Online Blue Burst — Ephinea.** The addon is built and tested against the
-   Ephinea client. Its enemy-proximity safety check reads Ephinea-specific memory addresses, so on
+1. **Phantasy Star Online Blue Burst** The addon is built and tested against the
+   client. Its enemy-proximity safety check reads soly-lib specific memory addresses, so on
    another server/client build that guard may not work correctly (see the *Known issues* section of
    the instructions).
 2. **Windows.** The feeder synthesizes keystrokes and checks window focus through Win32
