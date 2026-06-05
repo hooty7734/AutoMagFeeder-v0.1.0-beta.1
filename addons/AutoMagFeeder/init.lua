@@ -9,7 +9,10 @@ local lib_helpers = require("solylib.helpers")
 local lib_items = require("solylib.items.items")
 local lib_characters = require("solylib.characters")
 local ffi = require("ffi")
-local ImGui = require("imgui")
+-- imgui is a global table injected by the host plugin (the same one psointernal and
+-- every other addon use directly); it is not a module on package.path, so capture the
+-- global rather than require() it.
+local ImGui = imgui
 local item_data = require("solylib.items.items_list")
 local item_table = item_data.t
 
@@ -279,7 +282,7 @@ local mags_scanned = false
 
 -- Toolbox window UI state
 local compact_mode = false           -- minimized view: status + Start/Pause only
-local restore_full_size = false      -- force the full size once after Maximize
+local force_window_size = true       -- apply options.w/h once (first open, Maximize)
 
 
 
@@ -1203,31 +1206,38 @@ end
 
 -- === GUI / MENU PRESENTATION ===
 local function present()
-    -- Run the feed engine every frame (independent of window visibility).
-    execute_feeder_tick()
+    -- Run the feed engine every frame (independent of window visibility). Guarded: a tick
+    -- error (e.g. an unexpected memory read) must not bubble up and let the framework
+    -- disable the whole addon -- the control window keeps working and the error is logged.
+    local tick_ok, tick_err = pcall(execute_feeder_tick)
+    if not tick_ok then
+        debug_log("Tick error (feeding paused this frame): " .. tostring(tick_err))
+    end
 
     if not options.show_toolbox then return end
 
-    local resizeFlag = compact_mode and "AlwaysAutoResize" or nil
-    lib_helpers.PrepareWindowPositionAndSize("AutoMag Feeder Control Toolbox", options, "x", "y", "w", "h", "anchor", resizeFlag)
+    -- Position/size with the plain-number "Next" binding variants (the ones every core
+    -- addon uses). "FirstUseEver" applies the saved spot once, then leaves the window
+    -- free to drag and resize. NOTE: do not use the named SetWindowPos/SetWindowSize or
+    -- solylib's WindowPositionAndSize here -- this host binds the no-name overloads, which
+    -- run luaL_checknumber on the window-name string and throw (disabling the addon).
+    ImGui.SetNextWindowPos(options.x, options.y, "FirstUseEver")
 
-    -- Window sizing & open-state. Begin's 2nd return is the [X] open flag.
-    --   Compact: auto-fit the small status bar (AlwaysAutoResize).
-    --   Full:    "FirstUseEver" so a manual resize sticks.
+    -- Begin's 2nd return is the [X] open flag. Compact mode auto-fits the small status bar.
     local draw, keep_open
     if compact_mode then
         draw, keep_open = ImGui.Begin("AutoMag Feeder Control Toolbox", true, { "AlwaysAutoResize" })
     else
-        if restore_full_size then
-            ImGui.SetNextWindowSize(options.w, options.h, "Always")  -- restore once after Maximize
-            restore_full_size = false
+        if force_window_size then
+            ImGui.SetNextWindowSize(options.w, options.h, "Always")        -- one-shot restore after Maximize / first open
+            force_window_size = false
+        else
+            ImGui.SetNextWindowSize(options.w, options.h, "FirstUseEver")  -- initial size; manual resize then sticks
         end
         draw, keep_open = ImGui.Begin("AutoMag Feeder Control Toolbox", true)
     end
 
     if draw then
-        lib_helpers.TrackWindowPosition("AutoMag Feeder Control Toolbox", options, "x", "y", "w", "h", "anchor", function() SaveOptions(options) end, resizeFlag)
-
         -- === Always visible: status + Start/Pause + Minimize/Maximize ===
         ImGui.TextColored(0.25, 0.82, 0.88, 1.0, "Status:")
         if active_feeder_state.is_running then
@@ -1264,7 +1274,7 @@ local function present()
         if compact_mode then
             if ImGui.Button("Maximize") then
                 compact_mode = false
-                restore_full_size = true
+                force_window_size = true
             end
         else
             if ImGui.Button("Minimize") then
@@ -1381,7 +1391,7 @@ local function init()
     -- 3. Return the metadata and the 'present' loop to the PSOBB Addon framework
     return {
         name = "AutoMagFeeder",
-        version = "1.0.0",
+        version = "0.1.0.b",
         author = "hooty7734",
         description = "Automates Mag feeding sequences via exported plans.",
         present = present,

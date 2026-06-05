@@ -1,0 +1,23 @@
+# This repository ships ONLY the AutoMagFeeder addon and the Magatama release.
+# Everything else (the rest of the addon pack, IDE/editor files, etc.) is ignored.
+#
+# Strategy: ignore everything at the root, then re-include just what we want.
+
+# 1. Ignore everything at the repository root...
+/*
+
+# 2. ...except these infrastructure files and the two payloads we ship.
+!/.gitignore
+!/README.md
+!/Magatama_Release.zip
+!/addons/
+
+# 3. Inside addons/, ignore every sibling addon (solylib, core_*, Item Reader, ...).
+/addons/*
+
+# 4. ...and keep only AutoMagFeeder.
+!/addons/AutoMagFeeder/
+
+# Note: addons/AutoMagFeeder/options.lua is still ignored (per-user, regenerated at
+# runtime) — see addons/AutoMagFeeder/README.md.
+/addons/AutoMagFeeder/options.lua
