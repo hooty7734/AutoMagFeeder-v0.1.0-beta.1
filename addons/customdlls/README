@@ -1,0 +1,22 @@
+Custom DLLs to be loaded by the addon plugin should be placed here. Currently, only dinput8.dll is supported.
+
+Example: XInput Plus
+In XInput Plus, 
+1) Select your <PSO-ROOT>\psobb.exe 
+2) On the DirectInput tab, select "Enable DirectInput Output."
+3) Perform your customizations.
+4) Click "Apply." 
+
+XInput Plus created these files:
+- <PSO-ROOT>\dinput.dll
+- <PSO-ROOT>\dinput8.dll
+- <PSO-ROOT>\XInput1_3.dll
+- <PSO-ROOT>\XInputPlus.ini
+
+Move dinput.dll, dinput8.dll, and XInput1_3.dll to addons\customdlls folder. Result should be this:
+- <PSO-ROOT>\addons\customdlls\dinput.dll
+- <PSO-ROOT>\addons\customdlls\dinput8.dll
+- <PSO-ROOT>\addons\customdlls\XInput1_3.dll
+- <PSO-ROOT>\XInputPlus.ini
+
+Then install this base plugin into <PSO-ROOT> folder and you should be set.
